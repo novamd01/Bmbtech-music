@@ -308,6 +308,9 @@ function PlayerContent() {
   const [noteSenderName,      setNoteSenderName]      = useState("")
   const [noteTriggerAt,       setNoteTriggerAt]       = useState(0)
   const [noteCopied,          setNoteCopied]          = useState(false)
+  const [noteSecret,          setNoteSecret]          = useState(false)
+  const [noteShortening,      setNoteShortening]      = useState(false)
+  const [noteShortUrl,        setNoteShortUrl]        = useState<string | null>(null)
   const [showLikeAnim,       setShowLikeAnim]       = useState(false)
   // Favourite moments (triple-tap thumbnail to bookmark current position)
   const [favMoments,         setFavMoments]         = useState<FavMoment[]>([])
@@ -696,19 +699,41 @@ function PlayerContent() {
       nm:  noteMsg,
       nth: noteTheme,
       nf:  noteSenderName,
+      ...(noteSecret ? { sn: "1" } : {}),
     }
     return `${base}/note?${new URLSearchParams(p).toString()}`
   }
 
+  const shortenUrl = async (longUrl: string): Promise<string> => {
+    try {
+      // TinyURL free API — no key required
+      const res = await fetch(
+        `https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`,
+        { signal: AbortSignal.timeout(6000) }
+      )
+      if (res.ok) {
+        const short = (await res.text()).trim()
+        // Sanity check — TinyURL returns the short URL as plain text
+        if (short.startsWith("https://tinyurl.com/")) return short
+      }
+    } catch {}
+    return longUrl   // fallback: return the original URL if shortening fails
+  }
+
   const copyNoteUrl = async () => {
-    const url = buildNoteUrl()
-    try { await navigator.clipboard.writeText(url) } catch {
+    setNoteShortening(true)
+    setNoteShortUrl(null)
+    const long  = buildNoteUrl()
+    const short = await shortenUrl(long)
+    setNoteShortUrl(short)
+    try { await navigator.clipboard.writeText(short) } catch {
       const ta = document.createElement("textarea")
-      ta.value = url; document.body.appendChild(ta); ta.select()
+      ta.value = short; document.body.appendChild(ta); ta.select()
       document.execCommand("copy"); document.body.removeChild(ta)
     }
+    setNoteShortening(false)
     setNoteCopied(true)
-    setTimeout(() => setNoteCopied(false), 2500)
+    setTimeout(() => { setNoteCopied(false); setNoteShortUrl(null) }, 4000)
   }
 
   const nativeShare = async () => {
@@ -1726,12 +1751,37 @@ function PlayerContent() {
                     <span>{fmt(duration)}</span>
                   </div>
                 </div>
+                {/* Secret toggle */}
+                <div
+                  className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-muted/30 border border-border/30 cursor-pointer select-none"
+                  onClick={() => setNoteSecret(v => !v)}
+                >
+                  <div>
+                    <p className="text-xs font-semibold">🔒 Secret message</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {noteSecret ? "Receiver must tap Reveal to read it" : "Message shows immediately"}
+                    </p>
+                  </div>
+                  <div className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ml-3 ${noteSecret ? "bg-primary" : "bg-muted"}`}>
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${noteSecret ? "translate-x-5" : "translate-x-0.5"}`} />
+                  </div>
+                </div>
+                {/* Short URL preview */}
+                {noteShortUrl && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/30 border border-border/20">
+                    <span className="text-xs text-muted-foreground flex-shrink-0">🔗</span>
+                    <p className="text-xs font-mono text-primary truncate flex-1 select-all">{noteShortUrl}</p>
+                  </div>
+                )}
                 {/* Copy button */}
                 <button
                   onClick={copyNoteUrl}
-                  className="w-full h-11 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+                  disabled={noteShortening}
+                  className="w-full h-11 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-70"
                 >
-                  {noteCopied ? "✅ Link copied!" : "💌 Copy Note Link"}
+                  {noteShortening
+                    ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Shortening link…</>
+                    : noteCopied ? "✅ Copied!" : "💌 Copy Note Link"}
                 </button>
               </div>
             )}
@@ -2009,12 +2059,37 @@ function PlayerContent() {
                       <span>{fmt(duration)}</span>
                     </div>
                   </div>
+                  {/* Secret toggle */}
+                  <div
+                    className="flex items-center justify-between p-4 rounded-2xl bg-muted/40 border border-border/30 cursor-pointer select-none active:scale-[0.98] transition-all"
+                    onClick={() => setNoteSecret(v => !v)}
+                  >
+                    <div>
+                      <p className="text-sm font-semibold">🔒 Secret message</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {noteSecret ? "Receiver must tap Reveal to read it" : "Message shows immediately"}
+                      </p>
+                    </div>
+                    <div className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ml-3 ${noteSecret ? "bg-primary" : "bg-muted"}`}>
+                      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${noteSecret ? "translate-x-6" : "translate-x-0.5"}`} />
+                    </div>
+                  </div>
+                  {/* Short URL preview */}
+                  {noteShortUrl && (
+                    <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-muted/30 border border-border/20">
+                      <span className="text-sm flex-shrink-0">🔗</span>
+                      <p className="text-sm font-mono text-primary truncate flex-1 select-all">{noteShortUrl}</p>
+                    </div>
+                  )}
                   {/* Copy button */}
                   <button
                     onClick={copyNoteUrl}
-                    className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+                    disabled={noteShortening}
+                    className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-70"
                   >
-                    {noteCopied ? "✅ Link copied!" : "💌 Copy Note Link"}
+                    {noteShortening
+                      ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block" />Shortening link…</>
+                      : noteCopied ? "✅ Copied!" : "💌 Copy Note Link"}
                   </button>
                 </div>
               )}

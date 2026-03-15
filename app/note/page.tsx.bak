@@ -320,11 +320,10 @@ function NoteInner() {
             </div>
             <button
               onClick={() => router.push(`/player?id=${videoId}&title=${encodeURIComponent(songTitle)}&artist=${encodeURIComponent(artist)}&thumbnail=${encodeURIComponent(thumbnail)}&type=musiva&videoId=${videoId}`)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-xs font-medium transition-colors flex-shrink-0"
-              title="Get message"
+              className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors flex-shrink-0"
+              title="Open in player"
             >
-              <Music className="w-3.5 h-3.5" />
-              Get message
+              <Music className="w-4 h-4" />
             </button>
           </div>
 

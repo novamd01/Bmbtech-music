@@ -308,6 +308,7 @@ function PlayerContent() {
   const [noteSenderName,      setNoteSenderName]      = useState("")
   const [noteTriggerAt,       setNoteTriggerAt]       = useState(0)
   const [noteCopied,          setNoteCopied]          = useState(false)
+  const [noteSecret,          setNoteSecret]          = useState(false)
   const [noteShortening,      setNoteShortening]      = useState(false)
   const [noteShortUrl,        setNoteShortUrl]        = useState<string | null>(null)
   const [showLikeAnim,       setShowLikeAnim]       = useState(false)
@@ -686,15 +687,30 @@ function PlayerContent() {
   }
 
   const buildNoteUrl = () => {
-    const vid = currentSong?.videoId || currentSong?.id || ""
-    const t   = currentSong?.title   || title  || ""
-    const ar  = currentSong?.artist  || artist || ""
-    const th  = currentSong?.thumbnail || thumbnail || ""
+    const vid  = currentSong?.videoId || currentSong?.id || ""
+    const t    = currentSong?.title   || title  || ""
+    const ar   = currentSong?.artist  || artist || ""
+    const th   = currentSong?.thumbnail || thumbnail || ""
     const base = typeof window !== "undefined" ? window.location.origin : ""
+
+    if (noteSecret) {
+      // Secret note → normal /player URL with message embedded as params.
+      // videoId already in URL → player loads song instantly (no /note cold-start).
+      // At the chosen second the fullscreen message fires inside the player.
+      const p: Record<string, string> = {
+        id: vid, videoId: vid, title: t, artist: ar, thumbnail: th, type: "musiva",
+        sm:  noteMsg,
+        smt: String(noteTriggerAt),
+        smf: noteSenderName,
+      }
+      return `${base}/player?${new URLSearchParams(p).toString()}`
+    }
+
+    // Non-secret note → dedicated /note page with themed countdown experience
     const p: Record<string, string> = {
       id: vid, videoId: vid, title: t, artist: ar, thumbnail: th, type: "musiva",
       t:   String(noteTriggerAt),
-      nt:  noteTitle   || "A note for you",
+      nt:  noteTitle || "A note for you",
       nm:  noteMsg,
       nth: noteTheme,
       nf:  noteSenderName,
@@ -1749,6 +1765,21 @@ function PlayerContent() {
                     <span>{fmt(duration)}</span>
                   </div>
                 </div>
+                {/* Secret toggle */}
+                <div
+                  className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-muted/30 border border-border/30 cursor-pointer select-none"
+                  onClick={() => setNoteSecret(v => !v)}
+                >
+                  <div>
+                    <p className="text-xs font-semibold">🔒 Secret message</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {noteSecret ? "Receiver must tap Reveal to read it" : "Message shows immediately"}
+                    </p>
+                  </div>
+                  <div className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ml-3 ${noteSecret ? "bg-primary" : "bg-muted"}`}>
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${noteSecret ? "translate-x-5" : "translate-x-0.5"}`} />
+                  </div>
+                </div>
                 {/* Short URL preview */}
                 {noteShortUrl && (
                   <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/30 border border-border/20">
@@ -2040,6 +2071,21 @@ function PlayerContent() {
                         Use now ({fmt(Math.floor(currentTime))})
                       </button>
                       <span>{fmt(duration)}</span>
+                    </div>
+                  </div>
+                  {/* Secret toggle */}
+                  <div
+                    className="flex items-center justify-between p-4 rounded-2xl bg-muted/40 border border-border/30 cursor-pointer select-none active:scale-[0.98] transition-all"
+                    onClick={() => setNoteSecret(v => !v)}
+                  >
+                    <div>
+                      <p className="text-sm font-semibold">🔒 Secret message</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {noteSecret ? "Receiver must tap Reveal to read it" : "Message shows immediately"}
+                      </p>
+                    </div>
+                    <div className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ml-3 ${noteSecret ? "bg-primary" : "bg-muted"}`}>
+                      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${noteSecret ? "translate-x-6" : "translate-x-0.5"}`} />
                     </div>
                   </div>
                   {/* Short URL preview */}
