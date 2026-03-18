@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-const BASE_URL = "https://turbo-14uz.onrender.com"
+const BASE_URL = process.env.MUSIVA_API_URL || "https://turbo-14uz.onrender.com"
 
 export async function GET(request: NextRequest) {
   try {

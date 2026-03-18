@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 
 // Groq free models — using Meta Llama 3.3 70B (best multilingual quality on Groq free tier)
-const GROQ_API = "https://api.groq.com/openai/v1/chat/completions"
+const GROQ_API = process.env.GROQ_API_URL || "https://api.groq.com/openai/v1/chat/completions"
 const MODEL    = "llama-3.3-70b-versatile"
 
 export async function POST(request: NextRequest) {

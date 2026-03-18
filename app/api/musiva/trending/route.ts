@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-const DEEZER_CHART = "https://api.deezer.com/chart/0/tracks"
+const DEEZER_CHART = (process.env.DEEZER_CHART_URL || "https://api.deezer.com/chart") + "/0/tracks"
 
 // Country metadata for display (kept for frontend pill compatibility)
 export const TRENDING_COUNTRIES: Record<string, { flag: string; name: string }> = {

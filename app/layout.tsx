@@ -20,7 +20,7 @@ import Script from "next/script"
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
-const BASE_URL    = "https://musicanaz.vercel.app"
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://musicanaz.vercel.app"
 const LOGO_URL    = "https://raw.githubusercontent.com/wilooper/Asset/main/logo.png"
 const SITE_NAME   = "Musicanaz"
 const DESCRIPTION =

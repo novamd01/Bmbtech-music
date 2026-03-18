@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-const DEEZER_CHART = "https://api.deezer.com/chart"
+const DEEZER_CHART = process.env.DEEZER_CHART_URL || "https://api.deezer.com/chart"
 
 function mapDeezerTrack(t: any) {
   return {

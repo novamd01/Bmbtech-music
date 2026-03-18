@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
-const BASE = "https://musicanaz.vercel.app"
+const BASE = process.env.NEXT_PUBLIC_APP_URL || "https://musicanaz.vercel.app"
 
 // ── OG Metadata — makes WhatsApp / Telegram / iMessage show a rich card ──
 export async function generateMetadata({
