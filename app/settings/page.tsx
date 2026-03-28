@@ -219,7 +219,7 @@ export default function SettingsPage() {
               }}
               className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${prefs.blurThumbnailBg ? "bg-primary" : "bg-muted"}`}
             >
-              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${prefs.blurThumbnailBg ? "translate-x-5" : "translate-x-0.5"}`} />
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${prefs.blurThumbnailBg ? "translate-x-5" : "translate-x-0"}`} />
             </button>
           </div>
 
@@ -239,7 +239,7 @@ export default function SettingsPage() {
               }}
               className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${prefs.lyricsAutoScroll ? "bg-primary" : "bg-muted"}`}
             >
-              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${prefs.lyricsAutoScroll ? "translate-x-5" : "translate-x-0.5"}`} />
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${prefs.lyricsAutoScroll ? "translate-x-5" : "translate-x-0"}`} />
             </button>
           </div>
 
@@ -259,7 +259,7 @@ export default function SettingsPage() {
               }}
               className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${prefs.reactionsEnabled ? "bg-primary" : "bg-muted"}`}
             >
-              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${prefs.reactionsEnabled ? "translate-x-5" : "translate-x-0.5"}`} />
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${prefs.reactionsEnabled ? "translate-x-5" : "translate-x-0"}`} />
             </button>
           </div>
         </section>
@@ -505,7 +505,7 @@ export default function SettingsPage() {
                       }}
                       className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${prefs[key] ? "bg-primary" : "bg-muted"}`}
                     >
-                      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${prefs[key] ? "translate-x-5" : "translate-x-0.5"}`} />
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${prefs[key] ? "translate-x-5" : "translate-x-0"}`} />
                     </button>
                   </div>
                 ))}

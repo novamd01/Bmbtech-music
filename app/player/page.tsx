@@ -7,7 +7,7 @@ import {
   Volume2, VolumeX, Heart, ListPlus, AlignLeft,
   ListMusic, Music, GripVertical, Trash2, ChevronUp, ChevronDown as ChevronDownIcon,
   Zap, Download, Check, Radio, Loader2 as SpinnerIcon,
-  Type, Languages, Sparkles, RotateCcw, Share2, Link2 as Link, AlignLeft,
+  Type, Languages, Sparkles, RotateCcw, Share2, Link2 as Link,
   Maximize2, Timer, Users, QrCode, Copy, Clock, Smile, Star, X as XIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -1803,7 +1803,7 @@ function PlayerContent() {
                     </p>
                   </div>
                   <div className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${shareUseTimestamp ? "bg-primary" : "bg-muted"}`}>
-                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${shareUseTimestamp ? "translate-x-5" : "translate-x-0.5"}`} />
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${shareUseTimestamp ? "translate-x-5" : "translate-x-0"}`} />
                   </div>
                 </div>
 
@@ -1836,7 +1836,7 @@ function PlayerContent() {
                     </p>
                   </div>
                   <div className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${shareUseEndTimestamp ? "bg-primary" : "bg-muted"}`}>
-                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${shareUseEndTimestamp ? "translate-x-5" : "translate-x-0.5"}`} />
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${shareUseEndTimestamp ? "translate-x-5" : "translate-x-0"}`} />
                   </div>
                 </div>
 
@@ -2094,7 +2094,7 @@ function PlayerContent() {
                       </p>
                     </div>
                     <div className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${shareUseTimestamp ? "bg-primary" : "bg-muted"}`}>
-                      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${shareUseTimestamp ? "translate-x-6" : "translate-x-1"}`} />
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${shareUseTimestamp ? "translate-x-5" : "translate-x-0"}`} />
                     </div>
                   </div>
 
@@ -2127,7 +2127,7 @@ function PlayerContent() {
                       </p>
                     </div>
                     <div className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${shareUseEndTimestamp ? "bg-primary" : "bg-muted"}`}>
-                      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${shareUseEndTimestamp ? "translate-x-6" : "translate-x-1"}`} />
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${shareUseEndTimestamp ? "translate-x-5" : "translate-x-0"}`} />
                     </div>
                   </div>
 
@@ -2300,7 +2300,7 @@ function PlayerContent() {
                       </p>
                     </div>
                     <div className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ml-3 ${noteSecret ? "bg-primary" : "bg-muted"}`}>
-                      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${noteSecret ? "translate-x-6" : "translate-x-0.5"}`} />
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${noteSecret ? "translate-x-5" : "translate-x-0"}`} />
                     </div>
                   </div>
                   {/* Short URL preview */}
