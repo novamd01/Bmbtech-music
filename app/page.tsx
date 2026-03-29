@@ -6,13 +6,14 @@ import {
   Search, Music, Clock, Library, TrendingUp,
   BarChart3, Home, X, Loader2, ChevronRight,
   Mic2, Disc3, ListMusic, Radio, Video, Music2,
-  Settings, Globe, Play, ClipboardPaste,
+  Settings, Globe, Play, ClipboardPaste, Sparkles, Zap,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import SongCard from "@/components/song-card"
 import ImageWithFallback from "@/components/image-with-fallback"
 import { getRecentlyPlayed, getCountry, getPreferences, savePreferences } from "@/lib/storage"
+import { getAISearchEnabled, setAISearchEnabled, aiPersonalizedSearch, getAIRecommendations, getCollabSignals, aiSongToSong } from "@/lib/ai-client"
 import type { Song, MusivaTrack } from "@/lib/types"
 import { useRouter } from "next/navigation"
 import { useAudio } from "@/lib/audio-context"
@@ -466,6 +467,14 @@ export default function HomePage() {
   const [pasteLabel,     setPasteLabel]     = useState("")                   // display text
   const [pasteLoading,   setPasteLoading]   = useState(false)
 
+  // ── AI state ──────────────────────────────────────────────────────────
+  const [aiEnabled,        setAiEnabled]        = useState(false)
+  const [aiRecos,          setAiRecos]          = useState<Song[]>([])
+  const [aiRecosLoading,   setAiRecosLoading]   = useState(false)
+  const [aiCollabSignals,  setAiCollabSignals]  = useState<Song[]>([])
+  const [aiSearchLoading,  setAiSearchLoading]  = useState(false)
+  const [aiSearchBadge,    setAiSearchBadge]    = useState(false) // "personalized" label
+
   // Search state
   const [searchQuery,     setSearchQuery]     = useState("")
   const [suggestions,     setSuggestions]     = useState<string[]>([])
@@ -506,6 +515,11 @@ export default function HomePage() {
   const debounceRef     = useRef<ReturnType<typeof setTimeout> | null>(null)
   const searchedQuery   = useRef("")
   const resultsPushed   = useRef(false)
+
+  // Initialise AI toggle from localStorage
+  useEffect(() => {
+    setAiEnabled(getAISearchEnabled())
+  }, [])
 
   // Load country + source prefs on mount
   useEffect(() => {
@@ -551,6 +565,24 @@ export default function HomePage() {
 
   // Loaders
   const loadRecentlyPlayed = useCallback(() => setRecentlyPlayed(getRecentlyPlayed()), [])
+
+  const loadAIRecommendations = useCallback(async () => {
+    setAiRecosLoading(true)
+    try {
+      const data = await getAIRecommendations(20)
+      const songs = (data.songs || []).map(aiSongToSong).filter((s: Song) => s.videoId)
+      setAiRecos(songs)
+    } catch { setAiRecos([]) }
+    setAiRecosLoading(false)
+  }, [])
+
+  const loadAICollabSignals = useCallback(async () => {
+    try {
+      const data = await getCollabSignals(10)
+      const songs = (data.signals || []).map(aiSongToSong).filter((s: Song) => s.videoId)
+      setAiCollabSignals(songs)
+    } catch { setAiCollabSignals([]) }
+  }, [])
 
   const loadHome = useCallback(async () => {
     setHomeLoading(true)
@@ -627,6 +659,7 @@ export default function HomePage() {
   }, [chartsSource])
 
   useEffect(() => { loadHome(); loadRecentlyPlayed(); loadTopPlaylists() }, []) // eslint-disable-line
+  useEffect(() => { if (activeView === "home" && aiEnabled) { loadAIRecommendations(); loadAICollabSignals() } }, [activeView, aiEnabled]) // eslint-disable-line
   useEffect(() => { if (activeView === "trending") loadTrending() }, [activeView, trendingCountry, trendingSource]) // eslint-disable-line
   useEffect(() => { if (activeView === "charts") loadCharts(selectedRegion) }, [activeView, selectedRegion, chartsSource]) // eslint-disable-line
 
@@ -990,15 +1023,44 @@ export default function HomePage() {
     searchedQuery.current = query
     try {
       const fetchLimit = append ? LOAD_MORE_CHUNK : LIMIT
-      const url = `/api/musiva/search?q=${encodeURIComponent(query)}&filter=${filter}&limit=${fetchLimit}&offset=${offset}`
-      const data = await fetch(url).then(r => r.json())
-      const newItems: any[] = data.results || data || []
+      // ── AI-powered search (songs only, first page) ──
+      let newItems: any[] = []
+      let aiUsed = false
+      if (aiEnabled && filter === "songs" && !append) {
+        setAiSearchLoading(true)
+        try {
+          const aiData = await aiPersonalizedSearch(query, fetchLimit)
+          if (aiData.results?.length) {
+            newItems  = aiData.results.map((r: any) => ({
+              videoId:    r.song_id || r.videoId,
+              id:         r.song_id || r.videoId,
+              title:      r.title,
+              artists:    [{ name: r.artist }],
+              album:      { name: r.album || "" },
+              thumbnails: r.thumbnail ? [{ url: r.thumbnail, width: 226 }] : [],
+              duration:   r.duration || "",
+              _aiScore:   r.relevance_score,
+              _source:    r.source || "personal",
+            }))
+            aiUsed = true
+            setAiSearchBadge(aiData.personalized || false)
+          }
+        } catch {}
+        setAiSearchLoading(false)
+      }
+      if (!aiUsed) {
+        setAiSearchBadge(false)
+        const url = `/api/musiva/search?q=${encodeURIComponent(query)}&filter=${filter}&limit=${fetchLimit}&offset=${offset}`
+        const data = await fetch(url).then(r => r.json())
+        newItems = data.results || data || []
+      }
+      if (false) { const data = { hasMore: false }; void data } // type guard
       if (append) {
         setSearchResults(prev => ({ ...prev, [filter]: [...prev[filter], ...newItems] }))
       } else {
         setSearchResults(prev => ({ ...prev, [filter]: newItems }))
       }
-      setHasMore(prev => ({ ...prev, [filter]: data.hasMore || newItems.length >= fetchLimit }))
+      setHasMore(prev => ({ ...prev, [filter]: !aiUsed && (newItems.length >= fetchLimit) }))
     } catch {
       if (!append) setSearchResults(prev => ({ ...prev, [filter]: [] }))
     }
@@ -1183,6 +1245,23 @@ export default function HomePage() {
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
                 {suggestLoading && <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin" />}
+                {/* AI toggle button */}
+                <button
+                  type="button"
+                  title={aiEnabled ? "AI Search ON – click to disable" : "AI Search OFF – click to enable"}
+                  onClick={() => { const next = !aiEnabled; setAiEnabled(next); setAISearchEnabled(next) }}
+                  className={[
+                    "flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border transition-all mr-0.5",
+                    aiEnabled
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/30"
+                      : "bg-card/60 text-muted-foreground border-border/40 hover:border-primary/40 hover:text-foreground",
+                  ].join(" ")}
+                >
+                  {(aiEnabled && aiSearchLoading)
+                    ? <Loader2 className="w-3 h-3 animate-spin" />
+                    : <Sparkles className="w-3 h-3" />}
+                  <span className="hidden sm:inline">AI</span>
+                </button>
                 {searchQuery && (
                   <button type="button" onClick={clearSearch} className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-muted transition-colors">
                     <X className="w-3.5 h-3.5" />
@@ -1315,6 +1394,20 @@ export default function HomePage() {
               ))}
             </div>
 
+            {/* AI personalised badge */}
+            {aiEnabled && aiSearchBadge && activeFilter === "songs" && (
+              <div className="flex items-center gap-1.5 mb-3 text-xs text-primary">
+                <Sparkles className="w-3 h-3" />
+                <span className="font-medium">Personalised results</span>
+                <span className="text-muted-foreground">· sorted by your taste</span>
+              </div>
+            )}
+            {aiEnabled && !aiSearchBadge && activeFilter === "songs" && searchResults["songs"].length > 0 && (
+              <div className="flex items-center gap-1.5 mb-3 text-xs text-muted-foreground">
+                <Sparkles className="w-3 h-3" />
+                <span>AI Search active · build history to personalise</span>
+              </div>
+            )}
             {renderResults()}
           </section>
         )}
@@ -1322,6 +1415,55 @@ export default function HomePage() {
         {/* ══ HOME ══ */}
         {activeView === "home" && (
           <div>
+            {/* ── AI Recommendations (For You) ── */}
+            {aiEnabled && (
+              <section className="mb-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <h2 className="text-base font-bold">For You</h2>
+                  {aiRecos.length > 0 && (
+                    <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 ml-1">
+                      AI · personalised
+                    </span>
+                  )}
+                  <button
+                    onClick={loadAIRecommendations}
+                    className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >Refresh</button>
+                </div>
+                {aiRecosLoading ? (
+                  <CardGrid n={6} />
+                ) : aiRecos.length > 0 ? (
+                  <div className={GRID}>
+                    {aiRecos.slice(0, 12).map((song, i) => (
+                      <SongCard key={i} song={song} onPlayComplete={loadRecentlyPlayed} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-card/30 border border-border/20 text-sm text-muted-foreground">
+                    <Zap className="w-4 h-4 text-primary/50 flex-shrink-0" />
+                    <span>Play a few songs to unlock personalised recommendations</span>
+                  </div>
+                )}
+
+                {/* Collab signals strip */}
+                {aiCollabSignals.length > 0 && (
+                  <div className="mt-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Zap className="w-3.5 h-3.5 text-blue-400" />
+                      <h3 className="text-sm font-semibold">Discovered by listeners like you</h3>
+                      <span className="text-[10px] text-blue-400/80 bg-blue-400/10 border border-blue-400/20 px-2 py-0.5 rounded-full">collab</span>
+                    </div>
+                    <div className={GRID}>
+                      {aiCollabSignals.slice(0, 6).map((song, i) => (
+                        <SongCard key={i} song={song} onPlayComplete={loadRecentlyPlayed} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
+
             {/* Recently played */}
             {recentlyPlayed.length > 0 && (
               <section className="mb-8">
