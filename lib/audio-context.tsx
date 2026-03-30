@@ -8,7 +8,6 @@ import {
 import type { LyricLine, LyricsResponse, Song, UpNextQueue } from "./types"
 import { recordListenSeconds, addToSongHistory, recordBadgeEvent, getPartyUsername } from "./storage"
 import { localRecordPlay } from "./ai-client"
-import { logAIEvent } from "./ai-client"
 
 const LYRICS_API = process.env.NEXT_PUBLIC_LYRICS_API_URL || "https://test-0k.onrender.com"
 const PARTY_SERVER = process.env.NEXT_PUBLIC_PARTY_SERVER || "https://y-brown-two.vercel.app"
@@ -577,8 +576,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       setCurrentLyricIndex(-1)
       if (!song.isPodcast) loadLyrics(song)
       addToSongHistory(song)
-      // AI: log play event (fire-and-forget; listened_ms=0 at start)
-      if (!song.isPodcast) logAIEvent(song, 0, false, false)
       const videoId = song.videoId || song.id
       await loadYTApi()
       await loadVideo(videoId, startTime)

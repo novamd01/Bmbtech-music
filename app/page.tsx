@@ -16,7 +16,6 @@ import { getRecentlyPlayed, getCountry, getPreferences, savePreferences } from "
 import { getAISearchEnabled, setAISearchEnabled, aiPersonalizedSearch, getAIRecommendations, aiSongToSong, runAIAnalysis } from "@/lib/ai-client"
 import { getLocalData, getStats as getLocalStats, type TasteAnalysis } from "@/lib/local-data"
 import { getOrCreateUID } from "@/lib/uid"
-import { getAISearchEnabled, setAISearchEnabled, aiPersonalizedSearch, getAIRecommendations, getCollabSignals, aiSongToSong } from "@/lib/ai-client"
 import type { Song, MusivaTrack } from "@/lib/types"
 import { useRouter } from "next/navigation"
 import { useAudio } from "@/lib/audio-context"
@@ -470,14 +469,6 @@ export default function HomePage() {
   const [pasteLabel,     setPasteLabel]     = useState("")                   // display text
   const [pasteLoading,   setPasteLoading]   = useState(false)
 
-  // ── AI state ──────────────────────────────────────────────────────────
-  const [aiEnabled,        setAiEnabled]        = useState(false)
-  const [aiRecos,          setAiRecos]          = useState<Song[]>([])
-  const [aiRecosLoading,   setAiRecosLoading]   = useState(false)
-  const [aiCollabSignals,  setAiCollabSignals]  = useState<Song[]>([])
-  const [aiSearchLoading,  setAiSearchLoading]  = useState(false)
-  const [aiSearchBadge,    setAiSearchBadge]    = useState(false) // "personalized" label
-
   // ── AI state ────────────────────────────────────────────────────────────
   const [aiEnabled,       setAiEnabled]       = useState(false)
   const [aiAnalysis,      setAiAnalysis]      = useState<TasteAnalysis | null>(null)
@@ -529,11 +520,6 @@ export default function HomePage() {
   const debounceRef     = useRef<ReturnType<typeof setTimeout> | null>(null)
   const searchedQuery   = useRef("")
   const resultsPushed   = useRef(false)
-
-  // Initialise AI toggle from localStorage
-  useEffect(() => {
-    setAiEnabled(getAISearchEnabled())
-  }, [])
 
   // Init AI from localStorage
   useEffect(() => {
@@ -626,13 +612,6 @@ export default function HomePage() {
     setAiRecosLoading(false)
   }, [])
 
-  const loadAICollabSignals = useCallback(async () => {
-    try {
-      const data = await getCollabSignals(10)
-      const songs = (data.signals || []).map(aiSongToSong).filter((s: Song) => s.videoId)
-      setAiCollabSignals(songs)
-    } catch { setAiCollabSignals([]) }
-  }, [])
 
   const loadHome = useCallback(async () => {
     setHomeLoading(true)
@@ -710,7 +689,6 @@ export default function HomePage() {
 
   useEffect(() => { loadHome(); loadRecentlyPlayed(); loadTopPlaylists() }, []) // eslint-disable-line
   useEffect(() => { if (activeView === "home" && aiEnabled) loadAIRecommendations() }, [activeView, aiEnabled]) // eslint-disable-line
-  useEffect(() => { if (activeView === "home" && aiEnabled) { loadAIRecommendations(); loadAICollabSignals() } }, [activeView, aiEnabled]) // eslint-disable-line
   useEffect(() => { if (activeView === "trending") loadTrending() }, [activeView, trendingCountry, trendingSource]) // eslint-disable-line
   useEffect(() => { if (activeView === "charts") loadCharts(selectedRegion) }, [activeView, selectedRegion, chartsSource]) // eslint-disable-line
 
@@ -1462,9 +1440,6 @@ export default function HomePage() {
             </div>
 
             {/* AI personalised badge */}
-            {aiEnabled && aiSearchBadge && activeFilter === "songs" && (
-              <div className="flex items-center gap-1.5 mb-3 text-xs text-primary">
-                <Sparkles className="w-3 h-3" />
                 <span className="font-medium">Personalised results</span>
                 <span className="text-muted-foreground">· sorted by your taste</span>
               </div>
@@ -1489,139 +1464,6 @@ export default function HomePage() {
         {/* ══ HOME ══ */}
         {activeView === "home" && (
           <div>
-            {/* ── AI Recommendations (For You) ── */}
-            {aiEnabled && (
-              <section className="mb-8">
-                <div className="flex items-center gap-2 mb-4">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  <h2 className="text-base font-bold">For You</h2>
-                  {aiRecos.length > 0 && (
-                    <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 ml-1">
-                      AI · personalised
-                    </span>
-                  )}
-                  <button
-                    onClick={loadAIRecommendations}
-                    className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >Refresh</button>
-                </div>
-                {aiRecosLoading ? (
-                  <CardGrid n={6} />
-                ) : aiRecos.length > 0 ? (
-                  <div className={GRID}>
-                    {aiRecos.slice(0, 12).map((song, i) => (
-                      <SongCard key={i} song={song} onPlayComplete={loadRecentlyPlayed} />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-card/30 border border-border/20 text-sm text-muted-foreground">
-                    <Zap className="w-4 h-4 text-primary/50 flex-shrink-0" />
-                    <span>Play a few songs to unlock personalised recommendations</span>
-                  </div>
-                )}
-
-                {/* Collab signals strip */}
-                {aiCollabSignals.length > 0 && (
-                  <div className="mt-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Zap className="w-3.5 h-3.5 text-blue-400" />
-                      <h3 className="text-sm font-semibold">Discovered by listeners like you</h3>
-                      <span className="text-[10px] text-blue-400/80 bg-blue-400/10 border border-blue-400/20 px-2 py-0.5 rounded-full">collab</span>
-                    </div>
-                    <div className={GRID}>
-                      {aiCollabSignals.slice(0, 6).map((song, i) => (
-                        <SongCard key={i} song={song} onPlayComplete={loadRecentlyPlayed} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </section>
-            )}
-
-            {/* ── AI Analysis + Recommendations ── */}
-            {aiEnabled && (
-              <section className="mb-8">
-                <div className="rounded-2xl bg-card/40 border border-border/30 p-4 mb-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Brain className="w-4 h-4 text-primary" />
-                    <h2 className="text-base font-bold">AI Analysis</h2>
-                    {localStats && (
-                      <span className="ml-auto text-xs text-muted-foreground font-mono">
-                        {localStats.total_plays} plays · {localStats.liked} liked · {localStats.skipped} skipped
-                      </span>
-                    )}
-                  </div>
-                  {!aiAnalysis && !aiAnalyzing && (
-                    <div className="flex flex-col items-center gap-3 py-4 text-center">
-                      <Zap className="w-8 h-8 text-primary/30" />
-                      <p className="text-sm font-medium">No analysis yet</p>
-                      <p className="text-xs text-muted-foreground max-w-xs">Play a few songs then run the AI. It classifies your taste via MusicBrainz and finds users who share your vibe.</p>
-                      {aiAnalysisError && <p className="text-xs text-destructive">{aiAnalysisError}</p>}
-                      <button onClick={handleRunAnalysis} disabled={aiAnalyzing}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50">
-                        {aiAnalyzing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4"/>}
-                        {aiAnalyzing ? "Analysing…" : "Run AI Analysis"}
-                      </button>
-                    </div>
-                  )}
-                  {aiAnalyzing && (
-                    <div className="flex items-center gap-3 py-3 text-muted-foreground text-sm">
-                      <Loader2 className="w-5 h-5 animate-spin text-primary flex-shrink-0"/>
-                      <div>
-                        <p className="font-medium">Analysing your taste…</p>
-                        <p className="text-xs opacity-70 mt-0.5">Classifying songs via MusicBrainz. Up to 60 s on first run.</p>
-                      </div>
-                    </div>
-                  )}
-                  {aiAnalysis && !aiAnalyzing && (
-                    <div className="flex flex-col gap-3">
-                      <p className="text-sm text-muted-foreground leading-relaxed">{aiAnalysis.taste_summary}</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {(aiAnalysis.liked_types || []).map((t, i) => (
-                          <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-primary/15 text-primary border border-primary/25 font-medium">♥ {t}</span>
-                        ))}
-                        {(aiAnalysis.disliked_types || []).map((t, i) => (
-                          <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-destructive/10 text-destructive/70 border border-destructive/20">✕ {t}</span>
-                        ))}
-                      </div>
-                      {(aiAnalysis.similar_users || []).length > 0 && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Zap className="w-3.5 h-3.5 text-blue-400"/>
-                          <span><span className="text-blue-400 font-semibold">{aiAnalysis.similar_users.length}</span> listeners share your taste</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2 pt-1">
-                        <span className="text-xs text-muted-foreground/60 flex-1">
-                          {aiAnalysis.generated_at ? `Analysed ${Math.round((Date.now()-aiAnalysis.generated_at)/3_600_000)}h ago` : ""}
-                        </span>
-                        <button onClick={handleRunAnalysis} disabled={aiAnalyzing}
-                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground border border-border/40 px-2.5 py-1 rounded-full transition-colors">
-                          <Sparkles className="w-3 h-3"/>Re-analyse
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-4 h-4 text-primary"/>
-                  <h3 className="text-sm font-bold">Recommended for you</h3>
-                  {aiRecos.length > 0 && <span className="text-[10px] text-primary/80 bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full ml-1">AI · personalised</span>}
-                  <button onClick={loadAIRecommendations} className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors">Refresh</button>
-                </div>
-                {aiRecosLoading ? <CardGrid n={6}/>
-                  : aiRecos.length > 0 ? (
-                    <div className={GRID}>
-                      {aiRecos.slice(0,12).map((song,i) => <SongCard key={i} song={song} onPlayComplete={loadRecentlyPlayed}/>)}
-                    </div>
-                  ) : aiAnalysis ? (
-                    <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-card/30 border border-border/20 text-sm text-muted-foreground">
-                      <Zap className="w-4 h-4 text-primary/40 flex-shrink-0"/>
-                      <span>No recommendations yet — re-run analysis or keep listening</span>
-                    </div>
-                  ) : null}
-              </section>
-            )}
-
             {/* Recently played */}
             {recentlyPlayed.length > 0 && (
               <section className="mb-8">
