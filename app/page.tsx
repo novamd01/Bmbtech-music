@@ -6,7 +6,7 @@ import {
   Search, Music, Clock, Library, TrendingUp,
   BarChart3, Home, X, Loader2, ChevronRight,
   Mic2, Disc3, ListMusic, Radio, Video, Music2,
-  Settings, Globe, Play, ClipboardPaste, Sparkles, Zap,
+  Settings, Globe, Play, ClipboardPaste, Sparkles, Zap, Brain,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -1442,12 +1442,6 @@ export default function HomePage() {
             {/* AI personalised badge */}
                 <span className="font-medium">Personalised results</span>
                 <span className="text-muted-foreground">· sorted by your taste</span>
-              </div>
-            )}
-            {aiEnabled && !aiSearchBadge && activeFilter === "songs" && searchResults["songs"].length > 0 && (
-              <div className="flex items-center gap-1.5 mb-3 text-xs text-muted-foreground">
-                <Sparkles className="w-3 h-3" />
-                <span>AI Search active · build history to personalise</span>
               </div>
             )}
             {aiEnabled && aiSearchBadge && activeFilter === "songs" && (
