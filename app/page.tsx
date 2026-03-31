@@ -602,16 +602,6 @@ export default function HomePage() {
     setAiRecosLoading(false)
   }, [])
 
-  const loadAIRecommendations = useCallback(async () => {
-    setAiRecosLoading(true)
-    try {
-      const data = await getAIRecommendations(20)
-      const songs = (data.songs || []).map(aiSongToSong).filter((s: Song) => s.videoId)
-      setAiRecos(songs)
-    } catch { setAiRecos([]) }
-    setAiRecosLoading(false)
-  }, [])
-
 
   const loadHome = useCallback(async () => {
     setHomeLoading(true)
@@ -1274,25 +1264,154 @@ export default function HomePage() {
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
                 {suggestLoading && <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin" />}
-                {/* AI toggle button */}
                 <button
                   type="button"
-                  title={aiEnabled ? "AI Search ON – click to disable" : "AI Search OFF – click to enable"}
-                  onClick={() => { const next = !aiEnabled; setAiEnabled(next); setAISearchEnabled(next) }}
+                  title={aiEnabled ? "AI Search ON" : "AI Search OFF"}
+                  onClick={() => { const n = !aiEnabled; setAiEnabled(n); setAISearchEnabled(n) }}
                   className={[
                     "flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border transition-all mr-0.5",
                     aiEnabled
                       ? "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/30"
-                      : "bg-card/60 text-muted-foreground border-border/40 hover:border-primary/40 hover:text-foreground",
+                      : "bg-card/60 text-muted-foreground border-border/40 hover:border-primary/40",
                   ].join(" ")}
                 >
-                  {(aiEnabled && aiSearchLoading)
+                  {aiSearchLoading
                     ? <Loader2 className="w-3 h-3 animate-spin" />
                     : <Sparkles className="w-3 h-3" />}
                   <span className="hidden sm:inline">AI</span>
                 </button>
+                {searchQuery && (
+                  <button type="button" onClick={clearSearch} className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-muted transition-colors">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </form>
+
+          {/* ── Paste & Play banner ── */}
+          {pasteUrl && !showSuggestions && (
+            <div
+              className="mt-2 flex items-center gap-2 px-3 py-2.5 rounded-2xl
+                         bg-primary/10 border border-primary/25
+                         animate-in slide-in-from-top-2 duration-200"
+            >
+              {/* Icon */}
+              <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
+                <ClipboardPaste className="w-4 h-4 text-primary" />
+              </div>
+
+              {/* Label */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-primary leading-tight truncate">
+                  {pasteLabel || "Play in Musicanaz"}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  YouTube link detected in clipboard
+                </p>
+              </div>
+
+              {/* Play button */}
+              <button
+                onClick={handlePastePlay}
+                disabled={pasteLoading}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl
+                           bg-primary text-primary-foreground text-xs font-semibold
+                           hover:bg-primary/90 transition-colors disabled:opacity-60
+                           flex-shrink-0"
+              >
+                {pasteLoading
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  : <Play className="w-3.5 h-3.5" fill="currentColor" />
+                }
+                {pasteLoading ? "Loading…" : "Play"}
+              </button>
+
+              {/* Dismiss */}
+              <button
+                onClick={() => setPasteUrl(null)}
+                className="w-7 h-7 rounded-full flex items-center justify-center
+                           hover:bg-white/10 transition-colors text-muted-foreground
+                           flex-shrink-0"
+                title="Dismiss"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Suggestions */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div ref={suggestionsRef} className="absolute top-full left-0 right-0 mt-1.5 bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl overflow-hidden z-40">
+              {suggestions.map((s, i) => (
                 <button
-                  type="button"
+                  key={i}
+                  onClick={() => handleSuggestionClick(s)}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-primary/8 transition-colors text-left"
+                >
+                  <Search className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                  <span className="flex-1 truncate">{s}</span>
+                  <ChevronRight className="w-3 h-3 text-muted-foreground/40" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Nav pills ── */}
+        {activeView !== "results" && (
+          <div className="flex items-center justify-center gap-2 mb-8 flex-wrap">
+            {(["home", "trending", "charts", "radio"] as View[]).map(v => (
+              <Button
+                key={v}
+                variant={activeView === v ? "default" : "ghost"}
+                size="sm"
+                className="rounded-full px-5 gap-1.5 capitalize"
+                onClick={() => handleNavChange(v)}
+              >
+                {v === "home"     && <Home      className="w-3.5 h-3.5" />}
+                {v === "trending" && <TrendingUp className="w-3.5 h-3.5" />}
+                {v === "charts"   && <BarChart3  className="w-3.5 h-3.5" />}
+                {v === "radio"    && <Radio      className="w-3.5 h-3.5" />}
+                {v}
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {/* ══ RESULTS ══ */}
+        {activeView === "results" && (
+          <section>
+            <div className="flex items-center gap-3 mb-4">
+              <button onClick={clearSearch} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <ChevronRight className="w-4 h-4 rotate-180" />Back
+              </button>
+              <h2 className="text-base font-bold truncate">"{searchedQuery.current}"</h2>
+            </div>
+
+            {/* Filter tabs */}
+            <div className="flex gap-1.5 mb-5 overflow-x-auto pb-1 scrollbar-hide">
+              {FILTER_TABS.map(({ key, label, icon }) => (
+                <button
+                  key={key}
+                  onClick={() => handleFilterChange(key)}
+                  className={[
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all border flex-shrink-0",
+                    activeFilter === key
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-card/40 text-muted-foreground border-border/40 hover:bg-card/70 hover:text-foreground",
+                  ].join(" ")}
+                >
+                  {icon}{label}
+                  {searchResults[key].length > 0 && (
+                    <span className={`ml-0.5 text-[10px] px-1.5 py-0.5 rounded-full ${activeFilter === key ? "bg-white/20" : "bg-muted"}`}>
+                      {searchResults[key].length}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
             {aiEnabled && aiSearchBadge && activeFilter === "songs" && (
               <div className="flex items-center gap-1.5 mb-3 text-xs text-primary">
                 <Sparkles className="w-3 h-3" />
