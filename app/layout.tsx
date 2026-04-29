@@ -11,6 +11,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
+import { ThemeProvider } from "@/lib/theme-context"
 import { AudioProvider } from "@/lib/audio-context"
 import MiniPlayer from "@/components/mini-player"
 import OfflineBanner from "@/components/offline-banner"
@@ -127,7 +128,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased`}>
         {/* Android Chrome: hint that media played here is audio, not video.
             Also prevents the browser from sniffing content-type which can
@@ -197,11 +198,13 @@ export default function RootLayout({
             }),
           }}
         />
-        <AudioProvider>
-          <OfflineBanner />
-          {children}
-          <MiniPlayer />
-        </AudioProvider>
+        <ThemeProvider>
+          <AudioProvider>
+            <OfflineBanner />
+            {children}
+            <MiniPlayer />
+          </AudioProvider>
+        </ThemeProvider>
         <Analytics />
         <script
           dangerouslySetInnerHTML={{
