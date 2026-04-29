@@ -27,6 +27,32 @@ export interface DownloadedSong extends CachedSong {
   downloadedAt: number
 }
 
+// ─── Theme Persistence ──────────────────────────────────────
+const THEME_KEY = "musicana_theme"
+
+export type ThemeType = "light" | "dark" | "system"
+
+export function getThemePreference(): ThemeType {
+  if (typeof window === "undefined") return "dark"
+
+  try {
+    const saved = localStorage.getItem(THEME_KEY) as ThemeType | null
+    return saved || "dark"
+  } catch {
+    return "dark"
+  }
+}
+
+export function saveThemePreference(theme: ThemeType): void {
+  if (typeof window === "undefined") return
+
+  try {
+    localStorage.setItem(THEME_KEY, theme)
+  } catch (error) {
+    console.error("Failed to save theme preference:", error)
+  }
+}
+
 // Recently Played
 export function getRecentlyPlayed(): Song[] {
   if (typeof window === "undefined") return []
@@ -652,7 +678,7 @@ export function clearReactions(songId: string): void {
   } catch {}
 }
 
-// ─── Collab Playlist refs (local bookmarks) ───────────────────
+// ──��� Collab Playlist refs (local bookmarks) ───────────────────
 const COLLAB_KEY = "musicana_collab_refs"
 
 export interface CollabRef {
@@ -712,6 +738,7 @@ const ALL_KEYS = [
   "musicana_song_history",
   "musicana_reactions",
   "musicana_collab_refs",
+  "musicana_theme",
 ]
 
 export interface MusicanazBackup {
